@@ -104,7 +104,7 @@ class YaAPI:
 
 def init():
     vk_api = VkAPI()
-    ya_api = YaAPI('XXX')sdsd
+    ya_api = YaAPI('XXX')
     uid = '552934290'
     ya_api.upload(uid, vk_api.get_photos(uid))
 
