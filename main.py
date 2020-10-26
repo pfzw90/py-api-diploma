@@ -1,4 +1,5 @@
-import requests, pprint, urllib
+import requests, pprint, urllib, json, datetime
+from datetime import datetime
 from urllib.parse import urljoin
 from pprint import pprint
 
@@ -68,10 +69,11 @@ class YaAPI:
         return n_folder
 
     def create_folder(self, folder_name):
-        print(f'Creating folder "{folder_name}":' + str(
-            requests.put("https://cloud-api.yandex.net/v1/disk/resources",
-                         params={"path": '/' + folder_name},
-                         headers={"Authorization": self.auth}).status_code))
+        resp = requests.put("https://cloud-api.yandex.net/v1/disk/resources",
+                            params={"path": '/' + folder_name},
+                            headers={"Authorization": self.auth})
+        print(f'Creating folder "{folder_name}":' + str(resp.status_code))
+        return resp.ok
 
     def create_file_names(self, photos):
         for photo in photos:
@@ -83,24 +85,28 @@ class YaAPI:
     def upload(self, uid, photos):
         upload_folder = self.check_folder_name(uid, self.get_folders())
         self.create_file_names(photos)
-        self.create_folder(upload_folder)
-
-        for photo in photos:
-            response = requests.post("https://cloud-api.yandex.net/v1/disk/resources/upload",
-                                     params={"path": '/' + upload_folder + '/' + photo.name,
-                                             "url": photo.url},
-                                     headers={"Authorization": self.auth})
-            if response.status_code == 202:
-                print(f'Photo "{photo.name}" uploaded.')
-            else:
-                print(
-                    f'Error uploading photo "{photo.name}": {response.json().get("message")} : {response.status_code}')
+        if self.create_folder(upload_folder):
+            log_result = []
+            for photo in photos:
+                response = requests.post("https://cloud-api.yandex.net/v1/disk/resources/upload",
+                                         params={"path": '/' + upload_folder + '/' + photo.name,
+                                                 "url": photo.url},
+                                         headers={"Authorization": self.auth})
+                if response.status_code == 202:
+                    print(f'Photo "{photo.name}" uploaded.')
+                    log_result.append({"file_name": photo.name, "size": photo.size})
+                else:
+                    print(f'Error uploading photo "{photo.name}": '
+                          f'{response.json().get("message")} : {response.status_code}')
+            with open(f'{uid}_{datetime.now().strftime("%m_%d_%Y_%H_%M_%S")}_files.json', "w") as f:
+                json.dump(log_result, f, ensure_ascii=False, indent=2)
 
 
 def init():
+    y_token = input('YandexDisk token:')
+    uid = input('VK user id:')
     vk_api = VkAPI()
-    ya_api = YaAPI('')
-    uid = '552934290'
+    ya_api: YaAPI = YaAPI(y_token)
     ya_api.upload(uid, vk_api.get_photos(uid))
 
 
