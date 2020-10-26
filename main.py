@@ -69,20 +69,15 @@ class YaAPI:
 
     def create_folder(self, folder_name):
         print(f'Creating folder "{folder_name}":' + str(
-              requests.put("https://cloud-api.yandex.net/v1/disk/resources",
-                           params={"path": '/' + folder_name},
-                           headers={"Authorization": self.auth}).status_code))
+            requests.put("https://cloud-api.yandex.net/v1/disk/resources",
+                         params={"path": '/' + folder_name},
+                         headers={"Authorization": self.auth}).status_code))
 
     def create_file_names(self, photos):
         for photo in photos:
             photo.name = str(photo.likes)
-            i = 1
-            f = False
-            for photo_1 in photos[i:]:
-                if photo.likes == photo_1.likes and not f:
-                    photo.name += '_' + str(photo.date)
-                    f = True
-            i += 1
+            if [p.likes for p in photos].count(photo.likes) > 1:
+                photo.name += '_' + str(photo.date)
             photo.name += '.jpg'
 
     def upload(self, uid, photos):
@@ -104,7 +99,7 @@ class YaAPI:
 
 def init():
     vk_api = VkAPI()
-    ya_api = YaAPI('XXX')
+    ya_api = YaAPI('AgAAAAAZDE4_AADLW8SH5kQzi0XkkSd4mUG10Eo')
     uid = '552934290'
     ya_api.upload(uid, vk_api.get_photos(uid))
 
