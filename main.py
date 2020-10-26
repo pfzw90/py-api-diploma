@@ -97,7 +97,7 @@ class YaAPI:
                     log_result.append({"file_name": photo.name, "size": photo.size})
                 else:
                     print(f'Error uploading photo "{photo.name}": '
-                          f'{response.json().get("message")} : {response.status_code}')
+                          f'{response.json().get("message")}. Status code: {response.status_code}')
             with open(f'{uid}_{datetime.now().strftime("%m_%d_%Y_%H_%M_%S")}_files.json', "w") as f:
                 json.dump(log_result, f, ensure_ascii=False, indent=2)
 
