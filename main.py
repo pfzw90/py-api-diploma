@@ -82,16 +82,16 @@ class YaAPI:
 
     def upload(self, uid, photos):
         upload_folder = self.check_folder_name(uid, self.get_folders())
-        self.create_folder(upload_folder)
         self.create_file_names(photos)
+        self.create_folder(upload_folder)
 
         for photo in photos:
-            response = requests.put("https://cloud-api.yandex.net/v1/disk/resources/upload",
-                                    params={"path": '/' + upload_folder + '/' + photo.name,
-                                            "url": photo.url},
-                                    headers={"Authorization": self.auth})
-            if response.status_code == '202':
-                print(f'Photo "{photo["name"]}" uploaded.')
+            response = requests.post("https://cloud-api.yandex.net/v1/disk/resources/upload",
+                                     params={"path": '/' + upload_folder + '/' + photo.name,
+                                             "url": photo.url},
+                                     headers={"Authorization": self.auth})
+            if response.status_code == 202:
+                print(f'Photo "{photo.name}" uploaded.')
             else:
                 print(
                     f'Error uploading photo "{photo.name}": {response.json().get("message")} : {response.status_code}')
