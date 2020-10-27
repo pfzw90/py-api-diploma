@@ -63,8 +63,7 @@ class YaAPI:
         n = 1
         n_folder += '_' + str(n)
         while n_folder in ex_folders:
-            m = n + 1
-            n_folder = n_folder.replace('_' + str(n), '_' + str(m))
+            n_folder = n_folder.replace('_' + str(n), '_' + str(n+1))
             n += 1
         return n_folder
 
