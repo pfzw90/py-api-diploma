@@ -9,12 +9,14 @@ class Photo:
 
     def __init__(self, date, likes, sizes):
         self.date = date
-        self.size = sizes['type']
-        self.url = sizes['url']
         self.likes = likes
+        self.sizes = sizes
+        self.size_type = sizes['type']
+        self.url = sizes['url']
+        self.maxsize = max(sizes['width'], sizes['height'])
 
-    def __str__(self):
-        return f'date: {self.date}, likes: {self.likes}, size: {self.size}, url: {self.url}'
+    def __repr__(self):
+        return f'date: {self.date}, likes: {self.likes}, size: {self.maxsize}, url: {self.url}'
 
 
 class VkAPI:
@@ -31,7 +33,7 @@ class VkAPI:
                 if size['type'] == chart:
                     return size
 
-    def get_photos(self, uid):
+    def get_photos(self, uid, qty=5):
         get_url = urljoin(self.BASE_URL, 'photos.get')
         resp = requests.get(get_url, params={
             'access_token': self.token,
@@ -42,9 +44,10 @@ class VkAPI:
             'extended': 1
         }).json().get('response').get('items')
 
-        return [Photo(photo.get('date'),
-                      photo.get('likes')['count'],
-                      self.find_largest(photo.get('sizes'))) for photo in resp]
+        return sorted([Photo(photo.get('date'),
+                             photo.get('likes')['count'],
+                             self.find_largest(photo.get('sizes'))) for photo in resp],
+                      key=lambda p: p.maxsize, reverse=True)[:qty]
 
 
 class YaAPI:
@@ -63,7 +66,7 @@ class YaAPI:
         n = 1
         n_folder += '_' + str(n)
         while n_folder in ex_folders:
-            n_folder = n_folder.replace('_' + str(n), '_' + str(n+1))
+            n_folder = n_folder.replace('_' + str(n), '_' + str(n + 1))
             n += 1
         return n_folder
 
@@ -93,7 +96,7 @@ class YaAPI:
                                          headers={"Authorization": self.auth})
                 if response.status_code == 202:
                     print(f'Photo "{photo.name}" uploaded.')
-                    log_result.append({"file_name": photo.name, "size": photo.size})
+                    log_result.append({"file_name": photo.name, "size": photo.size_type})
                 else:
                     print(f'Error uploading photo "{photo.name}": '
                           f'{response.json().get("message")}. Status code: {response.status_code}')
@@ -104,9 +107,10 @@ class YaAPI:
 def init():
     y_token = input('YandexDisk token:')
     uid = input('VK user id:')
+    qty = input('Number of photos to upload: ')
     vk_api = VkAPI()
     ya_api: YaAPI = YaAPI(y_token)
-    ya_api.upload(uid, vk_api.get_photos(uid))
+    ya_api.upload(uid, vk_api.get_photos(uid, int(qty)))
 
 
 if __name__ == '__main__':
