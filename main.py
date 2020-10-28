@@ -22,16 +22,17 @@ class Photo:
 class VkAPI:
     BASE_URL = "https://api.vk.com/method/"
 
-    def __init__(self):
-        self.token = '958eb5d439726565e9333aa30e50e0f937ee432e927f0dbd541c541887d919a7c56f95c04217915c32008'
-        self.version = '5.124'
-
-    def find_largest(self, sizes):
+    @staticmethod
+    def find_largest(sizes):
         sizes_chart = ['x', 'z', 'y', 'r', 'q', 'p', 'o', 'x', 'm', 's']
         for chart in sizes_chart:
             for size in sizes:
                 if size['type'] == chart:
                     return size
+
+    def __init__(self):
+        self.token = '958eb5d439726565e9333aa30e50e0f937ee432e927f0dbd541c541887d919a7c56f95c04217915c32008'
+        self.version = '5.124'
 
     def get_photos(self, uid, qty=5):
         get_url = urljoin(self.BASE_URL, 'photos.get')
@@ -51,16 +52,17 @@ class VkAPI:
 
 
 class YaAPI:
-    def __init__(self, token: str):
-        self.auth = f'OAuth {token}'
 
-    def get_folders(self):
-        return [p['name'] for p in (requests.get("https://cloud-api.yandex.net/v1/disk/resources",
-                                                 params={"path": '/'},
-                                                 headers={"Authorization": self.auth})
-                                    .json().get('_embedded').get('items')) if p['type'] == 'dir']
+    @staticmethod
+    def create_file_names(photos):
+        for photo in photos:
+            photo.name = str(photo.likes)
+            if [p.likes for p in photos].count(photo.likes) > 1:
+                photo.name += '_' + str(photo.date)
+            photo.name += '.jpg'
 
-    def check_folder_name(self, n_folder, ex_folders):
+    @staticmethod
+    def check_folder_name(n_folder, ex_folders):
         if n_folder not in ex_folders:
             return n_folder
         n = 1
@@ -70,6 +72,16 @@ class YaAPI:
             n += 1
         return n_folder
 
+    def __init__(self, token: str):
+        self.auth = f'OAuth {token}'
+
+    def get_folders(self):
+        return [p['name'] for p in (requests.get("https://cloud-api.yandex.net/v1/disk/resources",
+                                                 params={"path": '/'},
+                                                 headers={"Authorization": self.auth})
+                                    .json().get('_embedded').get('items')) if p['type'] == 'dir']
+
+
     def create_folder(self, folder_name):
         resp = requests.put("https://cloud-api.yandex.net/v1/disk/resources",
                             params={"path": '/' + folder_name},
@@ -77,12 +89,7 @@ class YaAPI:
         print(f'Creating folder "{folder_name}":' + str(resp.status_code))
         return resp.ok
 
-    def create_file_names(self, photos):
-        for photo in photos:
-            photo.name = str(photo.likes)
-            if [p.likes for p in photos].count(photo.likes) > 1:
-                photo.name += '_' + str(photo.date)
-            photo.name += '.jpg'
+
 
     def upload(self, uid, photos):
         upload_folder = self.check_folder_name(uid, self.get_folders())
